@@ -1,0 +1,8 @@
+name "dbench"
+description "A workbench for benchmarking compile-time, run-time and binary size of D programs"
+authors "zlx"
+copyright "Copyright © 2019, zlx"
+license "BSL-1.0"
+
+targetPath "build"
+//debugVersions "MeasureProcess" "Main"
