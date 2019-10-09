@@ -113,28 +113,17 @@ Duration measure(string[] cmdline)
     import std.conv : to;
     import std.format : fmt = format;
     import std.exception : enforce;
-    import std.process : pipeProcess, Redirect, wait;
+    import std.process : execute;
     debug (MeasureProcess) import std.stdio : writef, writefln;
-    auto nullFile = devNull;
-    const start = MonoTime.currTime;
     debug (MeasureProcess) "Process: `%-(%s %)`".writef(cmdline);
-    auto pipes = pipeProcess(
-        cmdline,
-        Redirect.stderrToStdout | Redirect.stdout
-    );
-    int res = pipes.pid.wait();
-    string output;
-    foreach (line; pipes.stdout.byLine)
-    {
-        output ~= line;
-        output ~= '\n';
-    }
-
-    enforce(res == 0,
+    const start = MonoTime.currTime;
+    auto res = execute(cmdline);
+    const end = MonoTime.currTime;
+    enforce(res.status == 0,
         "Command `%-(%s %)` failed with code %s. Output:\n%s"
-            .fmt(cmdline, res, output)
+            .fmt(cmdline, res.status, res.output)
     );
-    const duration = MonoTime.currTime - start;
+    const duration = end - start;
     debug (MeasureProcess)
     {
         auto ms = duration.total!"msecs";
