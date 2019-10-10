@@ -1,11 +1,9 @@
-module ex4;
+module log_prefix.ex5;
 
-string logPrefix(string domain, string file)(uint line)
+template logPrefix(string domain, string file)
 {
     import std.path : baseName;
-    alias txt = UtoABuf!uint;
-    return
-        mixin(`"[`, domain, `|`, file.baseName, `:"`) ~ txt(line) ~ "] ";
+    enum logPrefix = mixin(`"[`, domain, `|`, file.baseName, `:"`);
 }
 
 struct UtoABuf(T)

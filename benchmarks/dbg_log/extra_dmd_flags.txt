@@ -1,0 +1,1 @@
+-defaultlib=libphobos2.so -debug=my_domain -I./benchmarks/ -i

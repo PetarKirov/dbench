@@ -1,4 +1,4 @@
-module ex3;
+module log_prefix.ex3;
 
 string logPrefix(string domain, string file)(int line)
 {

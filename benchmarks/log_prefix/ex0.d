@@ -1,4 +1,4 @@
-module ex0;
+module log_prefix.ex0;
 
 template logPrefix(string domain, string file, int line)
 {

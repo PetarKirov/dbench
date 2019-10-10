@@ -1,0 +1,1 @@
+-link-defaultlib-shared -d-debug=my_domain -I./benchmarks/ -i

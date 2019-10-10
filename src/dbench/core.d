@@ -1,8 +1,37 @@
 module dbench.core;
 
-import std.algorithm : canFind;
+import std.array : array, join, split;
+import std.algorithm : any, canFind, cartesianProduct, filter, map, sort;
+import std.conv : to;
 import std.datetime : Duration;
+import std.range : chain;
+import std.string : strip;
 debug import std.stdio : writefln;
+
+enum MetricType
+{
+    none           = 0b00000,
+    semanticTime   = 0b00001,
+    compileTime    = 0b00010,
+    linkTime       = 0b00100,
+    wholeBuildTime = 0b00111,
+    runTime        = 0b01000,
+    binarySize     = 0b10000,
+    all            = 0b11111
+}
+
+struct Metric(T, MetricType type)
+{
+    T value;
+    alias value this;
+    string cliArgs;
+}
+
+alias SemanticTime = Metric!(Duration, MetricType.semanticTime);
+alias CompileTime = Metric!(Duration, MetricType.compileTime);
+alias WholeBuildTime = Metric!(Duration, MetricType.wholeBuildTime);
+alias RunTime = Metric!(Duration, MetricType.runTime);
+alias BinarySize = Metric!(ulong, MetricType.binarySize);
 
 struct Compiler
 {
@@ -36,12 +65,16 @@ struct Compiler
     {
         return "-c";
     }
+
+    string outputPathCliFlag(string path) const
+    in (isKnownCompiler)
+    {
+        return "-of" ~ path;
+    }
 }
 
 Compiler* getCompilerInfo(string name)
 {
-    import std.algorithm : any;
-    import std.conv : to;
     import std.file : exists;
     import std.path : asAbsolutePath, asNormalizedPath, isDirSeparator, baseName;
     import dbench.util.process : getProcessPath, parseToolVersion;
@@ -79,95 +112,167 @@ unittest
     }
 }
 
+const struct CompilerConfig
+{
+    Compiler* compiler;
+    string[] flags;
+}
+
 struct TestSet
 {
     string name;
     string dir;
+    string ctfeOnlyRunner;
     string runner;
-    const(TestRun)*[] testRuns;
+    const(Test*)[] tests;
 
-    const struct TestRun
+    const struct Test
     {
         string name;
         string filepath;
         TestSet* set;
-
-        const(BenchResult*) run(
-            const Compiler* compiler,
-            MetricType type = MetricType.semanticTime) const
-        {
-            import dbench.util.process : measure;
-
-            string[] args = [
-                compiler.path,
-                compiler.versionCliFlag(this.name),
-                set.runner,
-                this.filepath
-            ];
-
-            auto result = new BenchResult();
-            result.testRun = &this;
-            result.compiler = compiler;
-            if (type & MetricType.semanticTime)
-            {
-                result.semanticTime = measure(args ~
-                        compiler.semanticOnlyCliFlag);
-            }
-            else if (type & MetricType.compileTime)
-            {
-                result.compileTime = measure(args ~ compiler.compileOnlyCliFlag);
-            }
-            else if (type & MetricType.compileAndLinkTime)
-            {
-                result.compileAndLinkTime = measure(args);
-            }
-            else
-                assert (0, "Unimplemented");
-
-            return result;
-        }
     }
+}
+
+const struct TestRun
+{
+    TestSet.Test* test;
+    CompilerConfig* compilerConfig;
 }
 
 struct BenchResult
 {
-    Duration semanticTime;
-    Duration compileTime;
-    Duration compileAndLinkTime;
-    Duration runTime;
-    ulong binarySize;
-    const(TestSet.TestRun)* testRun;
-    const(Compiler)* compiler;
+    SemanticTime semanticTime;
+    CompileTime compileTime;
+    WholeBuildTime compileAndLinkTime;
+    RunTime runTime;
+    BinarySize binarySize;
+    TestRun* testRun;
 }
 
-enum MetricType
+const(BenchResult*) run(
+    TestRun* testRun,
+    MetricType type = MetricType.all)
 {
-    none                = 0b00000,
-    semanticTime        = 0b00001,
-    compileTime         = 0b00010,
-    compileAndLinkTime  = 0b00100,
-    runTime             = 0b01000,
-    objectSize          = 0b10000,
-    all                 = 0b11111
+    import std.file : mkdirRecurse;
+    import std.path : buildPath;
+    import dbench.util.process : measure;
+
+    const compiler = testRun.compilerConfig.compiler;
+    const flags = testRun.compilerConfig.flags;
+    const test = testRun.test;
+    const set = testRun.test.set;
+
+    const buildDir = ".".buildPath("build", set.name);
+    buildDir.mkdirRecurse;
+    const binaryPath = buildDir.buildPath("runner");
+
+    string[] args = [
+        compiler.path,
+        test.filepath,
+        null,
+        compiler.versionCliFlag(test.name),
+        compiler.outputPathCliFlag(binaryPath)
+    ] ~ flags;
+
+    auto pRunner = &args[2];
+
+    auto result = new BenchResult();
+    result.testRun = testRun;
+    if (type & MetricType.semanticTime)
+    {
+        *pRunner = set.ctfeOnlyRunner;
+        result.semanticTime = measure(args ~
+                compiler.semanticOnlyCliFlag);
+    }
+    if (set.runner == null) return result;
+    *pRunner = set.runner;
+    if (type & MetricType.compileTime)
+    {
+        result.compileTime = measure(args ~ compiler.compileOnlyCliFlag);
+    }
+    if (type & MetricType.wholeBuildTime)
+    {
+        result.compileAndLinkTime = measure(args);
+    }
+    if (type & MetricType.binarySize)
+    {
+        import std.file : getSize;
+        result.binarySize = binaryPath.getSize;
+    }
+    if (type & MetricType.runTime)
+    {
+        result.runTime = measure([binaryPath]);
+    }
+
+    //if (type >= MetricType.runTime)
+    //    assert (0, "Unimplemented");
+
+    return result;
 }
 
-TestSet* getTestSet(string path)
+TestRun*[] genTestRuns(
+    const TestSet* testSet,
+    const CompilerConfig*[] compilerConfigs)
 {
-    import std.array : array;
-    import std.algorithm : filter, map;
-    import std.file : dirEntries, exists, SpanMode;
-    import std.path : baseName, buildPath, stripExtension;
+    import std.typecons : reverse;
+    return compilerConfigs
+        .cartesianProduct(testSet.tests)
+        .map!(tup => new TestRun(tup.reverse.expand))
+        .array;
+}
 
-    auto result = new TestSet(path.baseName, path);
-    result.testRuns = path
-        .dirEntries("ex*.d", SpanMode.shallow)
+
+const(CompilerConfig*[]) populateConfigs(
+    const Compiler*[] compilers, string path)
+{
+    import std.file : dirEntries, readText, SpanMode;
+    string[][] extraDFlagsVariations = path
+        .dirEntries("extra_dmd_flags*.txt", SpanMode.shallow)
         .filter!(de => de.isFile)
-        .map!(de => new TestSet.TestRun(de.name.baseName.stripExtension, de.name, result))
+        .map!(de => de.name.readText.strip.split(" "))
         .array;
 
-    const possibleRunnerLocation = path.buildPath("runner.d");
-    if (possibleRunnerLocation.exists)
-        result.runner = possibleRunnerLocation;
+    auto dmdCompilerRuns = compilers
+       .filter!(c => c.isDmdCompatible)
+       .cartesianProduct(extraDFlagsVariations)
+       .map!(tup => new CompilerConfig(tup.expand));
+
+    string[][] extraLdcFlagsVaraitions = path
+        .dirEntries("extra_ldc_flags*.txt", SpanMode.shallow)
+        .filter!(de => de.isFile)
+        .map!(de => de.name.readText.strip.split(" "))
+        .array;
+
+    auto ldcCompilerRuns = compilers
+       .filter!(c => c.isLdc)
+       .cartesianProduct(extraLdcFlagsVaraitions)
+       .map!(tup => new CompilerConfig(tup.expand));
+
+    return dmdCompilerRuns.chain(ldcCompilerRuns).array;
+}
+
+const(TestSet*) genTestSet(string path)
+{
+    import std.file : dirEntries, exists, readText, SpanMode;
+    import std.path : baseName, buildPath, stripExtension;
+    import std.string : strip;
+
+    auto result = new TestSet(path.baseName, path);
+
+    result.tests = path
+        .dirEntries("ex*.d", SpanMode.shallow)
+        .filter!(de => de.isFile)
+        .map!(de => new TestSet.Test(
+            de.name.baseName.stripExtension, de.name, result))
+        .array
+        .sort!((a, b) => a.name < b.name).release;
+
+    const runner = path.buildPath("runner.d");
+    result.runner = runner.exists? runner : null;
+
+    const ctfeRunner = path.buildPath("ctfe_runner.d");
+    result.ctfeOnlyRunner = ctfeRunner.exists? ctfeRunner : runner;
 
     return result;
 }
@@ -175,7 +280,6 @@ TestSet* getTestSet(string path)
 unittest
 {
     import std.algorithm : canFind, equal;
-    import std.conv : to;
     import std.format : fmt = format;
     import std.file : mkdirRecurse, readText;
     import std.path : buildPath;
@@ -190,19 +294,19 @@ unittest
         "module ex%s;".fmt(i).toFile(path.buildPath("ex%s.d".fmt(i)));
     "module runner;".toFile(path.buildPath("runner.d"));
 
-    auto testSet = path.getTestSet;
+    auto testSet = path.genTestSet;
     assert(testSet.name == "log_prefix");
     assert(testSet.dir == path);
     assert(testSet.runner.readText == "module runner;");
 
-    assert(testSet.testRuns.length == 4);
+    assert(testSet.tests.length == 4);
     alias pred = (a, b) => *a == *b;
-    assert(testSet.testRuns.canFind!pred(
-        new TestSet.TestRun("ex0", "./ctfe/log_prefix/ex0.d", testSet)));
-    assert(testSet.testRuns.canFind!pred(
-        new TestSet.TestRun("ex1", "./ctfe/log_prefix/ex1.d", testSet)));
-    assert(testSet.testRuns.canFind!pred(
-        new TestSet.TestRun("ex2", "./ctfe/log_prefix/ex2.d", testSet)));
-    assert(testSet.testRuns.canFind!pred(
-        new TestSet.TestRun("ex3", "./ctfe/log_prefix/ex3.d", testSet)));
+    assert(testSet.tests.canFind!pred(
+        new TestSet.Test("ex0", "./ctfe/log_prefix/ex0.d", testSet)));
+    assert(testSet.tests.canFind!pred(
+        new TestSet.Test("ex1", "./ctfe/log_prefix/ex1.d", testSet)));
+    assert(testSet.tests.canFind!pred(
+        new TestSet.Test("ex2", "./ctfe/log_prefix/ex2.d", testSet)));
+    assert(testSet.tests.canFind!pred(
+        new TestSet.Test("ex3", "./ctfe/log_prefix/ex3.d", testSet)));
 }

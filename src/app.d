@@ -1,11 +1,17 @@
-import std.array : array;
+import std.array : array, join;
 import std.algorithm : map, sort;
 import std.conv : to;
 import std.getopt;
 import std.path;
 import std.stdio;
 
-import dbench.core : getTestSet, getCompilerInfo, BenchResult;
+import dbench.core :
+    BenchResult,
+    getCompilerInfo,
+    genTestSet,
+    populateConfigs,
+    genTestRuns,
+    run;
 
 void main(string[] args)
 {
@@ -18,35 +24,37 @@ void main(string[] args)
         "compilers", &compilers
     );
 
-    auto testSet = getTestSet(testDir);
-    debug (Main) "Running %s tests in benchmark '%s'..."
-        .writefln(testSet.testRuns.length, testSet.name);
-
-    testSet.testRuns.sort!((a, b) => a.name < b.name);
-
-    auto compilerInfos = compilers.map!(c => c.getCompilerInfo).array;
+    const compilerInfos = compilers.map!(c => c.getCompilerInfo).array;
+    const compilerConfigs = compilerInfos.populateConfigs(testDir);
+    const testSet = genTestSet(testDir);
+    const testRuns = genTestRuns(testSet, compilerConfigs);
 
     const(BenchResult)*[] results;
 
-    foreach (compiler; compilerInfos)
+    foreach (testRun; testRuns)
     {
-        debug (Main) writeln(*compiler);
-
-        foreach (testRun; testSet.testRuns)
-        {
-            results ~= testRun.run(compiler);
-        }
+        results ~= testRun.run();
     }
 
-    "Name,Compiler,Time".writeln;
+    "Name,Semantic,Compile,Compile & Link,Run Time,Size,Compiler,Flags"
+        .writeln;
     foreach (result; results)
     {
         import std.typecons : t = tuple;
         auto r = result;
+        const setName = r.testRun.test.set.name;
+        const testName = r.testRun.test.name;
+        const compilerString = r.testRun.compilerConfig.compiler.name
+            ~ " " ~ r.testRun.compilerConfig.compiler.version_;
         "%(%s%|,%)".writefln(t(
-            r.testRun.set.name ~ "." ~ r.testRun.name,
-            r.compiler.name ~ " " ~ r.compiler.version_,
-            r.semanticTime.total!"msecs".to!string ~ "ms"
+            setName ~ "." ~ testName,
+            r.semanticTime.total!"msecs".to!string ~ "ms",
+            r.compileTime.total!"msecs".to!string ~ "ms",
+            r.compileAndLinkTime.total!"msecs".to!string ~ "ms",
+            r.runTime.total!"msecs".to!string ~ "ms",
+            r.binarySize,
+            compilerString,
+            r.testRun.compilerConfig.flags.join(" "),
             )
         );
     }
