@@ -51,3 +51,16 @@ env CC=clang dub run -q -- --test-dir=./benchmarks/dbg_log/ --compilers=$REPOS/d
 | dbg_log.ex3 | 215ms    | 617ms   | 687ms          | 474ms    | 378960 | ldc2 1.18.0-git-ad400ff           | -link-defaultlib-shared -d-debug=my_domain -I./benchmarks/ -i    |
 | dbg_log.ex4 | 217ms    | 914ms   | 992ms          | 526ms    | 591680 | ldc2 1.18.0-git-ad400ff           | -link-defaultlib-shared -d-debug=my_domain -I./benchmarks/ -i    |
 
+```
+dub run -q -- --test-dir=./benchmarks/log_prefix/ --compilers=dmd | tablize
++----------------+----------+---------+----------------+----------+------+-------------+-------+
+| Name           | Semantic | Compile | Compile & Link | Run Time | Size | Compiler    | Flags |
++----------------+----------+---------+----------------+----------+------+-------------+-------+
+| log_prefix.ex0 | 1519ms   | 0ms     | 0ms            | 0ms      | 0    | dmd 2.085.1 |       |
+| log_prefix.ex1 | 877ms    | 0ms     | 0ms            | 0ms      | 0    | dmd 2.085.1 |       |
+| log_prefix.ex2 | 751ms    | 0ms     | 0ms            | 0ms      | 0    | dmd 2.085.1 |       |
+| log_prefix.ex3 | 731ms    | 0ms     | 0ms            | 0ms      | 0    | dmd 2.085.1 |       |
+| log_prefix.ex4 | 745ms    | 0ms     | 0ms            | 0ms      | 0    | dmd 2.085.1 |       |
+| log_prefix.ex5 | 779ms    | 0ms     | 0ms            | 0ms      | 0    | dmd 2.085.1 |       |
++----------------+----------+---------+----------------+----------+------+-------------+-------+
+```

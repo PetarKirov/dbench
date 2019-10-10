@@ -233,6 +233,8 @@ const(CompilerConfig*[]) populateConfigs(
         .map!(de => de.name.readText.strip.split(" "))
         .array;
 
+    if (!extraDFlagsVariations.length) extraDFlagsVariations = [[]];
+
     auto dmdCompilerRuns = compilers
        .filter!(c => c.isDmdCompatible)
        .cartesianProduct(extraDFlagsVariations)
@@ -243,6 +245,8 @@ const(CompilerConfig*[]) populateConfigs(
         .filter!(de => de.isFile)
         .map!(de => de.name.readText.strip.split(" "))
         .array;
+
+    if (!extraLdcFlagsVaraitions.length) extraLdcFlagsVaraitions = [[]];
 
     auto ldcCompilerRuns = compilers
        .filter!(c => c.isLdc)
