@@ -1,0 +1,7 @@
+Name,Semantic,Compiler,Command Line
+log_prefix.ex0,1641ms,dmd 2.085.1,dmd ./benchmarks/log_prefix/ex0.d ./benchmarks/log_prefix/ctfe_runner.d -version=ex0 -of./build/log_prefix/runner
+log_prefix.ex1,876ms,dmd 2.085.1,dmd ./benchmarks/log_prefix/ex1.d ./benchmarks/log_prefix/ctfe_runner.d -version=ex1 -of./build/log_prefix/runner
+log_prefix.ex2,774ms,dmd 2.085.1,dmd ./benchmarks/log_prefix/ex2.d ./benchmarks/log_prefix/ctfe_runner.d -version=ex2 -of./build/log_prefix/runner
+log_prefix.ex3,737ms,dmd 2.085.1,dmd ./benchmarks/log_prefix/ex3.d ./benchmarks/log_prefix/ctfe_runner.d -version=ex3 -of./build/log_prefix/runner
+log_prefix.ex4,679ms,dmd 2.085.1,dmd ./benchmarks/log_prefix/ex4.d ./benchmarks/log_prefix/ctfe_runner.d -version=ex4 -of./build/log_prefix/runner
+log_prefix.ex5,700ms,dmd 2.085.1,dmd ./benchmarks/log_prefix/ex5.d ./benchmarks/log_prefix/ctfe_runner.d -version=ex5 -of./build/log_prefix/runner
