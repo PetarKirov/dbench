@@ -25,13 +25,15 @@ void main(string[] args)
 {
     string testDir;
     string[] compilers;
-    Visibility cmdlineVisibility;
+    string[] hiddenColumns;
+    Visibility cmdlineVisibility = Visibility.lite;
 
     std.getopt.arraySep = ",";
     args.getopt(
         "test-dir", &testDir,
         "compilers", &compilers,
-        "cmdline-visibility", &cmdlineVisibility
+        "cmdline-visibility", &cmdlineVisibility,
+        "hide-columns", &hiddenColumns
     );
 
     const compilerInfos = compilers.map!(c => c.getCompilerInfo).array;
@@ -48,6 +50,9 @@ void main(string[] args)
 
     ColumnVisibility!Table vis;
     vis.cmdline = cmdlineVisibility;
+
+    foreach (hiddenColumn; hiddenColumns)
+        vis[hiddenColumn] = Visibility.none;
 
     getStructHeader!Table(vis).writeln;
     foreach (result; results)

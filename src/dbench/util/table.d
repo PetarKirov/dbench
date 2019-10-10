@@ -118,6 +118,18 @@ struct FieldMetaData(Obj, Data, Data init = Data.init)
 {
     Data[Obj.tupleof.length] memberIndexedData = init;
 
+    ref inout(Data) opIndex(string memberName) inout
+    {
+        import std.traits : hasUDA, getUDAs;
+        final switch (memberName)
+        {
+            static foreach (idx, field; Obj.tupleof)
+                static if (hasUDA!(field, Column))
+                    case getUDAs!(field, Column)[0].name:
+                        return memberIndexedData[idx];
+        }
+    }
+
     ref inout(Data) opDispatch(string memberName)() inout
     {
         import std.meta : staticIndexOf;
