@@ -115,7 +115,7 @@ unittest
 const struct CompilerConfig
 {
     Compiler* compiler;
-    string[] flags;
+    string[] extraFlags;
 }
 
 struct TestSet
@@ -148,6 +148,7 @@ struct BenchResult
     RunTime runTime;
     BinarySize binarySize;
     TestRun* testRun;
+    string[] allFlags;
 }
 
 const(BenchResult*) run(
@@ -159,7 +160,7 @@ const(BenchResult*) run(
     import dbench.util.process : measure;
 
     const compiler = testRun.compilerConfig.compiler;
-    const flags = testRun.compilerConfig.flags;
+    const extraFlags = testRun.compilerConfig.extraFlags;
     const test = testRun.test;
     const set = testRun.test.set;
 
@@ -173,12 +174,13 @@ const(BenchResult*) run(
         null,
         compiler.versionCliFlag(test.name),
         compiler.outputPathCliFlag(binaryPath)
-    ] ~ flags;
+    ] ~ extraFlags;
 
     auto pRunner = &args[2];
 
     auto result = new BenchResult();
     result.testRun = testRun;
+    result.allFlags = args;
     if (type & MetricType.semanticTime)
     {
         *pRunner = set.ctfeOnlyRunner;
