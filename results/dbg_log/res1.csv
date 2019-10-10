@@ -1,0 +1,21 @@
+Name,Semantic,Compile,Compile & Link,Run Time,Size,Compiler,Flags
+dbg_log.ex0,217ms,246ms,314ms,1342ms,315944,dmd 2.085.1,-defaultlib=libphobos2.so -debug=my_domain -I./benchmarks/ -i
+dbg_log.ex1,212ms,239ms,301ms,1375ms,307728,dmd 2.085.1,-defaultlib=libphobos2.so -debug=my_domain -I./benchmarks/ -i
+dbg_log.ex2,298ms,341ms,424ms,486ms,685072,dmd 2.085.1,-defaultlib=libphobos2.so -debug=my_domain -I./benchmarks/ -i
+dbg_log.ex3,213ms,237ms,305ms,592ms,326248,dmd 2.085.1,-defaultlib=libphobos2.so -debug=my_domain -I./benchmarks/ -i
+dbg_log.ex4,212ms,237ms,301ms,576ms,334152,dmd 2.085.1,-defaultlib=libphobos2.so -debug=my_domain -I./benchmarks/ -i
+dbg_log.ex0,216ms,319ms,389ms,1168ms,315944,dmd 2.085.1,-O -defaultlib=libphobos2.so -debug=my_domain -I./benchmarks/ -i
+dbg_log.ex1,212ms,307ms,376ms,1167ms,303632,dmd 2.085.1,-O -defaultlib=libphobos2.so -debug=my_domain -I./benchmarks/ -i
+dbg_log.ex2,301ms,412ms,492ms,437ms,689168,dmd 2.085.1,-O -defaultlib=libphobos2.so -debug=my_domain -I./benchmarks/ -i
+dbg_log.ex3,211ms,314ms,385ms,529ms,326248,dmd 2.085.1,-O -defaultlib=libphobos2.so -debug=my_domain -I./benchmarks/ -i
+dbg_log.ex4,206ms,354ms,381ms,510ms,334152,dmd 2.085.1,-O -defaultlib=libphobos2.so -debug=my_domain -I./benchmarks/ -i
+dbg_log.ex0,246ms,1391ms,1440ms,678ms,312200,ldc2 1.16.0,-O -link-defaultlib-shared -d-debug=my_domain -I./benchmarks/ -i
+dbg_log.ex1,240ms,1395ms,1442ms,667ms,312216,ldc2 1.16.0,-O -link-defaultlib-shared -d-debug=my_domain -I./benchmarks/ -i
+dbg_log.ex2,331ms,2444ms,2506ms,378ms,403760,ldc2 1.16.0,-O -link-defaultlib-shared -d-debug=my_domain -I./benchmarks/ -i
+dbg_log.ex3,244ms,16829ms,16522ms,387ms,428768,ldc2 1.16.0,-O -link-defaultlib-shared -d-debug=my_domain -I./benchmarks/ -i
+dbg_log.ex4,242ms,8927ms,9061ms,357ms,387456,ldc2 1.16.0,-O -link-defaultlib-shared -d-debug=my_domain -I./benchmarks/ -i
+dbg_log.ex0,247ms,522ms,550ms,1204ms,334992,ldc2 1.16.0,-link-defaultlib-shared -d-debug=my_domain -I./benchmarks/ -i
+dbg_log.ex1,242ms,496ms,532ms,1195ms,322696,ldc2 1.16.0,-link-defaultlib-shared -d-debug=my_domain -I./benchmarks/ -i
+dbg_log.ex2,336ms,1154ms,1207ms,383ms,487344,ldc2 1.16.0,-link-defaultlib-shared -d-debug=my_domain -I./benchmarks/ -i
+dbg_log.ex3,241ms,673ms,705ms,518ms,434864,ldc2 1.16.0,-link-defaultlib-shared -d-debug=my_domain -I./benchmarks/ -i
+dbg_log.ex4,241ms,995ms,1028ms,502ms,655544,ldc2 1.16.0,-link-defaultlib-shared -d-debug=my_domain -I./benchmarks/ -i
